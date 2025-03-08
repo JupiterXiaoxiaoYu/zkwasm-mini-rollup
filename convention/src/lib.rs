@@ -114,9 +114,11 @@ impl<E: EventHandler> EventQueue<E> {
             entries.push(E::from_data(&mut dataiter));
         }
 
-        // zkwasm_rust_sdk::dbg!("entries from storage: {} at counter {}\n", entries_nb, {
-        //     self.counter
-        // });
+        let trace = unsafe {zkwasm_rust_sdk::wasm_trace_size()};
+
+        zkwasm_rust_sdk::dbg!("entries from storage: {} with trace {}\n", entries_nb, {
+            trace
+        });
         // perform activities from existing entries
         for mut e in entries {
             let m = e.handle(counter);
@@ -125,6 +127,9 @@ impl<E: EventHandler> EventQueue<E> {
                 self.insert(event);
             }
         }
+
+        let trace = unsafe {zkwasm_rust_sdk::wasm_trace_size()};
+        zkwasm_rust_sdk::dbg!("handle with trace {}\n", trace);
 
         while let Some(head) = self.list.front_mut() {
             if head.get_delta() == 0 {
@@ -138,6 +143,8 @@ impl<E: EventHandler> EventQueue<E> {
                 break;
             }
         }
+        let trace = unsafe {zkwasm_rust_sdk::wasm_trace_size()};
+        zkwasm_rust_sdk::dbg!("handle with trace {}\n", trace);
         self.counter += 1;
     }
 
@@ -145,6 +152,7 @@ impl<E: EventHandler> EventQueue<E> {
     /// The event queue is a differential time queue (DTQ) and the event will
     /// be inserted into its proper position based on its delta time
     pub fn insert(&mut self, node: E) {
+        let trace = unsafe {zkwasm_rust_sdk::wasm_trace_size()};
         let mut event = node.clone();
         let mut cursor = self.list.cursor_front_mut();
         while cursor.current().is_some()
@@ -161,6 +169,8 @@ impl<E: EventHandler> EventQueue<E> {
         };
 
         cursor.insert_before(event);
+        let trace_after = unsafe {zkwasm_rust_sdk::wasm_trace_size()};
+        zkwasm_rust_sdk::dbg!("handle insert trace {}\n", {trace_after - trace});
     }
 }
 
